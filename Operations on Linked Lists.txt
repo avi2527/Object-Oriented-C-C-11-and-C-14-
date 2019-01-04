@@ -1,0 +1,255 @@
+#include <iostream>
+using namespace std;
+
+class node {
+public:
+	int value;
+	node * next;
+	node * previous;
+	node(int i) { value = i; next = previous = nullptr; }
+	node() { next = previous = nullptr; }
+};
+
+class doubly_linked_list {
+public:
+	node * head;
+	node * tail;
+	doubly_linked_list() { head = tail = nullptr; }
+	void make_random_list(int m, int n);
+	void print_forward();
+	void print_backward();
+	void remove_one(int k); //remvoe the first node with value k
+	void remove_all(int k); //remove all nodes with value k
+    void reverse();//reverse the order of the list	
+    void sort(); //sort the nodes in ascending order
+    void insert(int k); //insert a node to an already sorted list
+
+
+};
+
+void doubly_linked_list:: make_random_list(int m, int n) {
+
+	for (int i = 0; i < m; i++) {
+		node * p1 = new node(rand() % n);
+		p1->previous = tail;
+		if (tail != nullptr) tail->next = p1;
+		tail= p1;
+		if (head == nullptr) head = p1;
+	}
+}
+
+void doubly_linked_list::print_forward() {
+	cout << endl;
+	node * p1 = head;
+	while (p1 != nullptr) {
+		cout << p1->value << " ";
+		p1 = p1->next;
+
+	}
+}
+
+void doubly_linked_list::print_backward() {
+	cout << endl;
+	node * p1 = tail;
+	while (p1 != nullptr) {
+		cout << p1->value << " ";
+		p1 = p1->previous;
+	}
+}
+
+void doubly_linked_list::remove_one(int k) {
+	cout << endl;
+	node * p;
+	if (head == nullptr) return;
+	if (head->value == k) {
+		 p = head; 
+		  head = head->next; 
+		  head->next->previous =nullptr;
+		  delete p; 
+		   return; 
+		 }
+
+	if(tail->value == k){
+		p = tail;
+		tail = tail->previous;
+		tail->previous->next =nullptr;
+		delete p;
+		return;
+	}
+
+	node *p1 = head, *p2 = head->next;
+	while (p2 != nullptr) {
+		if (p2->value == k) {
+			p1->next = p2->next;
+			p2->next->previous = p1;
+			delete p2;
+			return;
+		}
+		p1 = p2;
+		p2 = p2->next;
+
+	}
+}
+
+void doubly_linked_list::remove_all(int k) {
+    cout << endl;
+	if (head == nullptr) return;
+	
+	node* p1 = head, *p2;
+	while (p1 != nullptr)
+	{
+		if (k == p1->value)
+		{
+			if (p1 == head)
+			{
+				head = head->next;
+				head->previous = nullptr;
+				delete p1;
+				p1 = head;
+		}
+			else if (p1 == tail)
+			{
+			  node *p = tail;
+				tail = tail->previous;
+				tail->next = nullptr;
+				delete p;
+				p1 = tail;
+				p1= p1->next;
+			}
+			else
+			{
+				node * p = p1;
+				node* p3 = p1->next;
+				p->previous->next = p->next;
+				p->next->previous = p->previous;
+				delete p;
+				p1 = p3;
+			}
+		}
+		else
+		{
+			p1 = p1->next;
+		}
+	}
+
+}
+
+void doubly_linked_list::reverse() {
+	node * p1 = head;
+
+	while (p1 != nullptr)
+	{
+		node * p2 = nullptr;
+		p2 = p1->previous;
+		p1->previous = p1->next;
+		p1->next = p2;
+		p1 = p1->previous;
+	}
+	node * p3 = tail;
+	tail = head;
+	head = p3;
+}
+
+void doubly_linked_list::sort() {
+	
+	if (head == nullptr) return;
+
+    node *i;
+    for(i=head; i!=nullptr; i=i->next)
+         {
+	        node * p1 = head; 
+            node  *p2, *p3;
+            while(p1->next!=nullptr)
+             {
+                p2=p1->next;
+                if(p1->value > p2->value)
+                {            
+                    int x = p1->value;
+                    p1->value = p2->value;
+                    p2->value = x;
+
+                }
+                p1=p1->next;
+			}
+		 }  
+}
+
+void doubly_linked_list::insert(int k) {
+
+             node *i;
+             node *pnew = new node;
+             pnew->value=k;
+             pnew->previous =nullptr;
+             pnew->next = nullptr;
+             int flag=0;
+             
+        if (head == nullptr) 
+    	{
+    	    head=pnew;
+    	    return;
+    	}   	
+    	else{
+                   if(head!=nullptr && head->value>=pnew->value){
+                        head->previous=pnew;
+                        pnew->next=head;
+                        head = pnew;
+                    } 
+
+    	            else if(pnew->value >= tail->value){
+                         tail->next =pnew;
+                         pnew->previous = tail;
+                         tail=pnew;
+                     }
+
+            		else{
+							i=head;
+							while(i!=nullptr && flag==0)
+							{
+								  if(i->value > k)
+								  { 
+									 i->previous->next = pnew;
+									 pnew->next = i;
+									 pnew->previous = i->previous;
+									 i->previous = pnew;
+									 flag=1;
+									 return;
+								  }
+								i=i->next;
+							}
+            			}
+    	}  	
+}
+
+int main() {
+	doubly_linked_list d1;
+	d1.make_random_list(30, 10);
+	d1.print_forward();
+	d1.print_backward();
+
+	d1.reverse();
+	d1.print_forward();
+	d1.print_backward();
+	
+	d1.remove_one(7);
+	d1.remove_one(8);
+	d1.print_forward();
+	d1.print_backward();
+
+	d1.remove_all(5);
+	d1.print_forward();
+	d1.print_backward();
+
+   d1.sort();
+   d1.print_forward();
+   d1.print_backward();
+	
+	d1.insert(4);
+	d1.insert(9);
+	d1.insert(0);
+	d1.print_forward();
+	d1.print_backward();
+
+	getchar();
+	getchar();
+	return 0;
+}

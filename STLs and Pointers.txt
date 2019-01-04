@@ -1,0 +1,158 @@
+
+#include <iostream>
+#include <list>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+//Write code for the following five functions
+//In both DB1_print and DB2_print, you are required to use index function (i.e., []) for vector, rather than iterator
+
+void DB1_print(vector<list<list<string>>> &DB1);
+void DB1_to_DB2(vector<list<list<string>>> &DB1, list<vector<list<string> *> *> &DB2);
+void DB2_print(list<vector<list<string> *> *> &DB2);
+void DB2_to_DB3(list<vector<list<string> *> *> &DB2, list<list<list<string *> *>> &DB3);
+void DB3_print(list<list<list<string *> *>> &DB3);
+
+int main()
+{
+    vector<list<list<string>>> DB1 = {
+        {{"cat", "dog"}, {"duck", "chicken", "pig"}},
+        {{"lion", "tiger", "hyena", "leopard"}, {"Zebra", "elephant"}, {"buffalo"}}};
+    DB1_print(DB1);
+    list<vector<list<string> *> *> DB2;
+    DB1_to_DB2(DB1, DB2);
+    DB2_print(DB2);
+    list<list<list<string *> *>> DB3;
+    DB2_to_DB3(DB2, DB3);
+    DB3_print(DB3);
+    getchar();
+    getchar();
+    return 0;
+}
+
+void DB1_print(vector<list<list<string>>> &DB1)
+{
+    //Your code
+    cout << endl;
+    for (int i = 0; i < DB1.size(); i++)
+    {
+        for (auto it1 = DB1[i].begin(); it1 != DB1[i].end(); it1++)
+        {
+            for (auto it2 = it1->begin(); it2 != it1->end(); it2++)
+            {
+                cout << *it2 << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+}
+
+void DB1_to_DB2(vector<list<list<string>>> &DB1, list<vector<list<string> *> *> &DB2)
+{
+    //Your code
+    for (int i = 0; i < DB1.size(); i++)
+    {
+        vector<list<string> *> *vector1 = new vector<list<string> *>;
+        auto it1 = DB1[i].begin();
+        for (; it1 != DB1[i].end(); it1++)
+        {
+            list<string> *list2 = new list<string>;
+            auto it2 = it1->begin();
+            for (; it2 != it1->end(); it2++)
+            {
+                list2->push_back(*it2);
+            }
+            vector1->push_back(list2);
+        }
+        DB2.push_back(vector1);
+    }
+}
+
+void DB2_print(list<vector<list<string> *> *> &DB2)
+{
+    //Your code
+    cout << endl;
+    auto it1 = DB2.begin();
+    for (; it1 != DB2.end(); it1++)
+    {
+        for (int i = 0; i < (*it1)->size(); i++)
+        {
+            auto it2 = (**it1)[i]->begin();
+            for (; it2 != (**it1)[i]->end(); it2++)
+            {
+                cout << *it2 << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+}
+
+void DB2_to_DB3(list<vector<list<string> *> *> &DB2, list<list<list<string *> *>> &DB3)
+{
+    //Your code
+    for (auto it1 = DB2.begin(); it1 != DB2.end(); it1++)
+    {
+        list<list<string *> *> list1;
+        for (int i = 0; i < (*it1)->size(); i++)
+        {
+            list<string *> *list2 = new list<string *>;
+            for (auto it2 = (**it1)[i]->begin(); it2 != (**it1)[i]->end(); it2++)
+            {
+                string *p = new string(*it2);
+                list2->push_back(p);
+            }
+            list1.push_back(list2);
+        }
+        DB3.push_back(list1);
+    }
+}
+
+void DB3_print(list<list<list<string *> *>> &DB3)
+{
+    //Your code
+    cout << endl;
+    for (auto it1 = DB3.begin(); it1 != DB3.end(); it1++)
+    {
+        for (auto it2 = it1->begin(); it2 != it1->end(); it2++)
+        {
+            for (auto it3 = (*it2)->begin(); it3 != (*it2)->end(); it3++)
+            {
+                cout << **it3 << " ";
+            }
+            cout << endl;
+        }
+        cout << endl;
+    }
+}
+
+//The following is a sample screenshot
+//Your output needs to folloiwng idential format
+/*
+
+cat dog
+duck chicken pig
+
+lion tiger hyena leopard
+Zebra elephant
+buffalo
+
+
+cat dog
+duck chicken pig
+
+lion tiger hyena leopard
+Zebra elephant
+buffalo
+
+
+cat dog
+duck chicken pig
+
+lion tiger hyena leopard
+Zebra elephant
+buffalo
+*/

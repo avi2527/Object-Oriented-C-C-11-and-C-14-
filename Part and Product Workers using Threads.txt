@@ -1,0 +1,372 @@
+#include <iostream>
+#include <vector>
+#include<cstdlib>
+#include<ctime>
+#include <numeric>
+#include <string>
+#include <thread>
+#include <chrono>
+#include <mutex>
+#include <condition_variable>
+#include <random>
+
+using namespace std;
+
+mutex mutex1;
+int c_size = 4;
+vector<int> buffer(c_size);
+int seed = 5;
+vector<int> MaxB = { 6, 5, 4, 3 };
+vector<pair<condition_variable, condition_variable> > CV(c_size);
+
+
+//Generating Place Request
+vector<int> rgen()
+{
+	vector <int> preq;
+	int exc;
+	int count = 0;
+	for (int i = 0; i <= 3; i++)
+	{
+		int value = rand() % 5;
+		preq.push_back(value);
+	}
+	int sum = accumulate(preq.begin(), preq.end(), 0);
+	for (int k = 0; k < (int)preq.size(); k++) {
+		if (preq.at(k)>0)
+		{
+			count++;
+
+		}
+	}
+//Non Zero Vector Detection
+	if (count == 4)
+	{
+		exc = 0;
+	}
+	else {
+		exc = 1;
+	}
+
+	if (sum <= 4 && exc == 1) {
+		for (int j = 0; j < (int)preq.size(); j++) {
+		}
+		return preq;
+	}
+	else {
+		for (int j = 0; j < (int)preq.size(); j++) {
+		}
+		return rgen();
+	}
+
+}
+
+
+void PartWorker(int pw)
+{
+	int seed = rand() % 5;
+	seed= seed + pw;
+	srand((unsigned)time(0) + seed);
+
+	for (int r = 1; r < 6; r++)
+	{
+		unique_lock<mutex> lock(mutex1);
+		//generate place request
+		vector<int>PLreq = rgen();
+		vector<bool> pendingreq(c_size);
+
+
+		for (int k = 0; k < (int)PLreq.size(); k++) {
+			if (PLreq.at(k) != 0)
+			{
+				pendingreq[k] = true;
+
+			}
+		}
+
+		while (true)
+		{
+			int dead = 0;
+			cout << "Part Worker ID: " << pw << endl;
+			cout << "Iteration: " << r<< endl;
+			cout << "Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+			cout << "Place Request: (" << PLreq[0] << "," << PLreq[1] << "," << PLreq[2] << "," << PLreq[3] << ")" << endl;
+
+			for (int k = 0; k < c_size; k++)
+			{
+
+				if (buffer[k] == MaxB[k])
+					continue;
+				if (pendingreq[k] == false)
+					continue;
+				if ((buffer[k] + PLreq[k]) <= MaxB[k])
+				{
+					buffer[k] += PLreq[k];
+					PLreq[k] = 0;
+				}
+				else
+				{
+					PLreq[k] -= (MaxB[k] - buffer[k]);
+					buffer[k] = MaxB[k];
+				}
+				CV[k].second.notify_one();
+			}
+
+			cout << "Updated Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+			cout << "Updated Place Request: (" << PLreq[0] << "," << PLreq[1] << "," << PLreq[2] << "," << PLreq[3] << ")" << endl;
+			cout << endl;
+
+
+			for (int k = 0; k < c_size; k++)
+			{
+				if (PLreq[k] != 0)
+				{
+					auto const timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+					CV[k].first.wait_until(lock, timeout);
+					string DL;
+
+					for (int k = 0; k < c_size; k++)
+					{
+						if (PLreq[k] != 0 && buffer[k] != MaxB[k])
+							pendingreq[k] = true;
+						else
+							pendingreq[k] = false;
+					}
+
+					if (dead == 30)
+					{
+						cout << "Part Worker ID: " << pw << endl;
+						cout << "Iteration: " << r << endl;
+						cout << "Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+						cout << "Place Request: (" << PLreq[0] << "," << PLreq[1] << "," << PLreq[2] << "," << PLreq[3] << ")" << endl;
+						cout << "Updated Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+						cout << "Updated Place Request: (" << PLreq[0] << "," << PLreq[1] << "," << PLreq[2] << "," << PLreq[3] << ")" << endl;
+						cout << "DeadLock Detected--> Return" << endl;
+						cout << endl;
+						return;
+					}
+
+					//Deadlock Count
+					for (int k = 0; k < c_size; k++) {
+						if (pendingreq.at(k) ==false)
+						{
+							DL = "yes";
+
+						}
+					}
+
+					if (DL == "yes") {
+						k--;
+						dead++;
+						continue;
+					}
+					break;
+				}
+			}
+			int cot;
+			for (int k = 0; k < (int)PLreq.size(); k++) {
+				if (PLreq.at(k)>0)
+				{
+					cot++;
+
+				}
+				else {
+					cot = 0;
+				}
+			}
+
+			if(cot==0)
+				break;
+		}
+	}
+}
+
+//Generating Pickup Request
+vector<int> pgen() {
+
+	vector <int> treq;
+	int acc;
+	for (int i = 0; i <= 3; i++)
+	{
+		int value = rand() % 5;
+		treq.push_back(value);
+	}
+	int sum = accumulate(treq.begin(), treq.end(), 0);
+	int count = 0;
+	for (int k = 0; k < (int)treq.size(); k++) {
+		if (treq.at(k)>0)
+		{
+			count++;
+
+		}
+	}
+	//Vector acceptance for take away
+	if (count == 3)
+	{
+		acc = 1;
+	}
+	else {
+		acc = 0;
+	}
+
+	if (sum <= 4 && acc == 1) {
+		for (int j = 0; j < (int)treq.size(); j++) {
+		}
+		return treq;
+	}
+	else {
+		for (int j = 0; j < (int)treq.size(); j++) {
+		}
+		return pgen();
+	}
+}
+
+
+
+void ProductWorker(int pw)
+{
+	int seed = rand() % 5;
+	seed = seed + pw;
+	srand((unsigned)time(0) + seed);
+
+	for (int r = 1; r < 6; r++)
+	{
+		unique_lock<mutex> lock(mutex1);
+		//generate pickup request
+		vector<int>PUreq = pgen();
+		vector<bool> pupendingreq(c_size);
+
+		for (int k = 0; k < (int)PUreq.size(); k++) {
+			if (PUreq.at(k) != 0)
+			{
+				pupendingreq[k] = true;
+
+			}
+		}
+
+		while (true)
+		{
+			int dead = 0;
+			cout << "Product Worker ID: " << pw << endl;
+			cout << "Iteration: " << r << endl;
+			cout << "Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+			cout << "Pickup Request: (" << PUreq[0] << "," << PUreq[1] << "," << PUreq[2] << "," << PUreq[3] << ")" << endl;
+
+			for (int k = 0; k < c_size; k++)
+			{
+				
+				if (buffer[k] == 0)
+					continue;
+				if (pupendingreq[k]==false)
+					continue;
+				if (buffer[k] >= PUreq[k])
+				{
+					buffer[k] -= PUreq[k];
+					PUreq[k] = 0;
+				}
+				else
+				{
+					PUreq[k] -= buffer[k];
+					buffer[k] = 0;
+				}
+				CV[k].first.notify_one();
+			}
+
+			cout << "Updated Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+			cout << "Updated Pickup Request: (" << PUreq[0] << "," << PUreq[1] << "," << PUreq[2] << "," << PUreq[3] << ")" << endl;
+			cout << endl;
+
+			for (int k = 0; k < c_size; k++)
+			{
+				if (PUreq[k] != 0)
+				{
+					auto const timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(500);
+					CV[k].second.wait_until(lock, timeout);
+					string DL;
+
+					for (int k = 0; k < c_size; k++)
+					{
+						if (PUreq[k] != 0 && buffer[k] != 0)
+							pupendingreq[k] = true;
+						else
+							pupendingreq[k] = false;
+					}
+					if (dead == 30)
+					{
+						cout << "Product Worker ID: " << pw << endl;
+						cout << "Iteration: " << r << endl;
+						cout << "Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+						cout << "Pickup Request: (" << PUreq[0] << "," << PUreq[1] << "," << PUreq[2] << "," << PUreq[3] << ")" << endl;
+						cout << "Updated Buffer State: (" << buffer[0] << "," << buffer[1] << "," << buffer[2] << "," << buffer[3] << ")" << endl;
+						cout << "Updated Pickup Request: (" << PUreq[0] << "," << PUreq[1] << "," << PUreq[2] << "," << PUreq[3] << ")" << endl;
+						cout << "DeadLock Detected--> Return" << endl;
+						cout << endl;
+						return;
+					}
+
+
+					//Deadlock Count
+					for (int k = 0; k < c_size; k++) {
+						if (pupendingreq.at(k) == false)
+						{
+							DL = "yes";
+
+						}
+					}
+
+					if (DL == "yes") {
+						k--;
+						dead++;
+						continue;
+					}
+					break;
+				}
+			}
+
+				int cot;
+			for (int k = 0; k < (int)PUreq.size(); k++) {
+				if (PUreq.at(k)>0)
+				{
+					cot++;
+
+				}
+				else {
+					cot = 0;
+				}
+			}
+
+			if (cot == 0)
+				break;
+		}
+	}
+}
+
+
+int main() {
+	const int m = 20, n = 16; //m: number of Part Workers
+							//n: number of Product Workers
+							//m>n
+
+	thread partW[m];
+	thread prodW[n];
+	for (int i = 0; i < n; i++) {
+		partW[i] = thread(PartWorker, i);
+		prodW[i] = thread(ProductWorker, i);
+	}
+	for (int i = n; i<m; i++) {
+		partW[i] = thread(PartWorker, i);
+	}
+	/* Join the threads to the main threads */
+	for (int i = 0; i < n; i++) {
+		partW[i].join();
+		prodW[i].join();
+	}
+	for (int i = n; i<m; i++) {
+
+		partW[i].join();
+	}
+	cout << "Finish!" << endl;
+	getchar();
+	getchar();
+	return 0;
+}
